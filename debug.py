@@ -25,7 +25,8 @@ async def main() -> None:
             ip_address=printer_ip, centauri_carbon=False, logger=logger
         )
         printer = elegoo_printer.discover_printer()
-        if printer:
+        if printer and printer.ip_address:
+            elegoo_printer.ip_address = printer.ip_address
             connected = await elegoo_printer.connect_printer()
             if connected:
                 logger.debug("Polling Started")
