@@ -35,12 +35,10 @@ class ElegooPrinterClient:
     Uses the SDCP Protocol (https://github.com/cbd-tech/SDCP-Smart-Device-Control-Protocol-V3.0.0).
     """
 
-    def __init__(
-        self, ip_address: str, centauri_carbon: bool = False, logger: Any = LOGGER
-    ) -> None:
+    def __init__(self, logger: Any = LOGGER) -> None:
         """Initialize the ElegooPrinterClient."""
-        self.ip_address: str = ip_address
-        self.centauri_carbon: bool = centauri_carbon
+        self.ip_address: str = ""
+        self.centauri_carbon: bool = False
         self.printer_websocket: websocket.WebSocketApp | None = None
         self.printer: Printer = Printer()
         self.printer_data = PrinterData()
@@ -143,9 +141,9 @@ class ElegooPrinterClient:
                 "Not connected"
             )
 
-    def discover_printer(self) -> Printer | None:
+    def discover_printer(self, ip_address: str = "<broadcast>") -> Printer | None:
         """Discover the Elegoo printer on the network."""
-        self.logger.info(f"Starting printer discovery at {self.ip_address}")
+        self.logger.info(f"Starting printer discovery at {ip_address}")
         msg = b"M99999"
         with socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
@@ -154,7 +152,7 @@ class ElegooPrinterClient:
             sock.settimeout(DISCOVERY_TIMEOUT)
             sock.bind(("", DEFAULT_PORT))
             try:
-                _ = sock.sendto(msg, (self.ip_address, 3000))
+                _ = sock.sendto(msg, (ip_address, 3000))
                 data = sock.recv(8192)
             except TimeoutError:
                 self.logger.warning("Printer discovery timed out.")
@@ -165,6 +163,8 @@ class ElegooPrinterClient:
                 if printer:
                     self.logger.debug("Discovery done.")
                     self.printer = printer
+                    self.centauri_carbon = printer.model == "Centauri Carbon"
+                    print(self.centauri_carbon)
                     return printer
 
         return None

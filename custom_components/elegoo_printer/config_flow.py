@@ -53,8 +53,8 @@ def _test_credentials(ip_address: str, centauri_carbon: bool) -> Printer:
     Raises:
         ElegooPrinterClientGeneralError: If no printer is found at the given IP address.
     """
-    elegoo_printer = ElegooPrinterClient(ip_address, centauri_carbon, LOGGER)
-    printer = elegoo_printer.discover_printer()
+    elegoo_printer = ElegooPrinterClient(LOGGER)
+    printer = elegoo_printer.discover_printer(ip_address)
     if printer:
         return printer
     raise ElegooPrinterClientGeneralError(

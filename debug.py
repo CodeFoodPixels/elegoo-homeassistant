@@ -21,10 +21,8 @@ async def main() -> None:
     stop_event = asyncio.Event()
     try:
         printer_ip = os.getenv("PRINTER_IP", "10.0.0.212")
-        elegoo_printer = ElegooPrinterClient(
-            ip_address=printer_ip, centauri_carbon=False, logger=logger
-        )
-        printer = elegoo_printer.discover_printer()
+        elegoo_printer = ElegooPrinterClient(logger=logger)
+        printer = elegoo_printer.discover_printer(printer_ip)
         if printer:
             connected = await elegoo_printer.connect_printer()
             if connected:
