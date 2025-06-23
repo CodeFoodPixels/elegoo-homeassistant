@@ -22,7 +22,7 @@ async def main() -> None:
     try:
         printer_ip = os.getenv("PRINTER_IP", "10.0.0.212")
         elegoo_printer = ElegooPrinterClient(logger=logger)
-        printer = elegoo_printer.discover_printer(printer_ip)
+        printer = elegoo_printer.discover_printer()
         if printer:
             connected = await elegoo_printer.connect_printer()
             if connected:

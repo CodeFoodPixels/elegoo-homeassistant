@@ -164,7 +164,6 @@ class ElegooPrinterClient:
                     self.logger.debug("Discovery done.")
                     self.printer = printer
                     self.centauri_carbon = printer.model == "Centauri Carbon"
-                    print(self.centauri_carbon)
                     return printer
 
         return None
