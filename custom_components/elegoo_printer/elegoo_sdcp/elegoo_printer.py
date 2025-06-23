@@ -6,8 +6,9 @@ import os
 import socket
 import time
 from threading import Thread
-from typing import Any
+from typing import Any, Optional
 
+import netifaces
 import websocket
 
 from .const import DEBUG, LOGGER
@@ -16,8 +17,9 @@ from .models.print_history_detail import PrintHistoryDetail
 from .models.printer import Printer, PrinterData
 from .models.status import PrinterStatus
 
-DISCOVERY_TIMEOUT = 1
+DISCOVERY_TIMEOUT = 10
 DEFAULT_PORT = 54780
+DISCOVERY_PORT = 3000
 
 
 class ElegooPrinterClientWebsocketError(Exception):
@@ -143,29 +145,89 @@ class ElegooPrinterClient:
                 "Not connected"
             )
 
-    def discover_printer(self) -> Printer | None:
-        """Discover the Elegoo printer on the network."""
-        self.logger.info(f"Starting printer discovery at {self.ip_address}")
+    def _get_broadcast_addresses(self) -> list[str]:
+        """
+        Retrieves a list of IPv4 broadcast addresses for all active network interfaces.
+        """
+        broadcast_addrs = []
+        try:
+            for iface in netifaces.interfaces():
+                # Get the addresses for the AF_INET (IPv4) family
+                if netifaces.AF_INET in netifaces.ifaddresses(iface):
+                    for addr_info in netifaces.ifaddresses(iface)[netifaces.AF_INET]:
+                        # Each interface can have multiple addresses; we need the one with a broadcast address
+                        if "broadcast" in addr_info:
+                            broadcast_addrs.append(addr_info["broadcast"])
+        except Exception as e:
+            self.logger.error(f"Could not get network interface information: {e}")
+            # Fallback for systems where netifaces might fail
+            self.logger.warning(
+                "Falling back to limited broadcast address '255.255.255.255'"
+            )
+            return ["255.255.255.255"]
+
+        # Return a list of unique broadcast addresses
+        return list(set(broadcast_addrs))
+
+    def discover_printer(self) -> Optional[Printer]:
+        """Discover the Elegoo printer on all local subnets."""
+        self.logger.info("Starting printer discovery...")
         msg = b"M99999"
+        broadcast_addresses = self._get_broadcast_addresses()
+
+        if not broadcast_addresses:
+            self.logger.error("No network interfaces found for broadcasting.")
+            return None
+
+        self.logger.info(f"Will broadcast on: {broadcast_addresses}")
+
         with socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
         ) as sock:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             sock.settimeout(DISCOVERY_TIMEOUT)
-            sock.bind(("", DEFAULT_PORT))
+
+            # You need to bind to receive the response. Binding to "" means it will
+            # listen on all available interfaces on the specified port.
             try:
-                _ = sock.sendto(msg, (self.ip_address, 3000))
-                data = sock.recv(8192)
-            except TimeoutError:
-                self.logger.warning("Printer discovery timed out.")
-            except OSError:
-                self.logger.exception("Socket error during discovery")
-            else:
+                # Note: The original code used DEFAULT_PORT here. Ensure this is correct.
+                # If the printer responds to a different port, adjust accordingly.
+                sock.bind(("", DEFAULT_PORT))
+            except OSError as e:
+                self.logger.exception(
+                    f"Error binding to port {DEFAULT_PORT}: {e}. Port may be in use."
+                )
+                return None
+
+            # Send the discovery message to all identified broadcast addresses
+            for addr in broadcast_addresses:
+                try:
+                    sock.sendto(msg, (addr, DISCOVERY_PORT))
+                    self.logger.debug(
+                        f"Discovery message sent to {addr}:{DISCOVERY_PORT}"
+                    )
+                except OSError as e:
+                    self.logger.error(f"Failed to send to {addr}: {e}")
+
+            # After sending to all, wait for a response
+            try:
+                self.logger.info("Waiting for printer response...")
+                # Note: This will only capture the FIRST printer to respond.
+                data, remote_addr = sock.recvfrom(8192)
+                self.logger.info(f"Received response from {remote_addr[0]}")
+
                 printer = self._save_discovered_printer(data)
                 if printer:
-                    self.logger.debug("Discovery done.")
+                    self.logger.info("Printer discovered successfully.")
                     self.printer = printer
                     return printer
+
+            except TimeoutError:
+                self.logger.warning(
+                    "Printer discovery timed out. No response received."
+                )
+            except OSError as e:
+                self.logger.exception(f"Socket error during discovery: {e}")
 
         return None
 
