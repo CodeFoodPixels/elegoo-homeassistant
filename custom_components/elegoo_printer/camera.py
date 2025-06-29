@@ -4,19 +4,16 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.elegoo_printer import ElegooDataUpdateCoordinator
-from custom_components.elegoo_printer.const import (
-    CONF_CENTAURI_CARBON,
-    CONF_PROXY_ENABLED,
-    LOGGER,
-)
+from custom_components.elegoo_printer.const import (CONF_CENTAURI_CARBON,
+                                                    CONF_PROXY_ENABLED, LOGGER)
 from custom_components.elegoo_printer.data import ElegooPrinterConfigEntry
 from custom_components.elegoo_printer.definitions import (
-    PRINTER_FFMPEG_CAMERAS,
-    PRINTER_MJPEG_CAMERAS,
-    ElegooPrinterSensorEntityDescription,
-)
-from custom_components.elegoo_printer.elegoo_sdcp.client import ElegooPrinterClient
-from custom_components.elegoo_printer.elegoo_sdcp.models.enums import ElegooVideoStatus
+    PRINTER_FFMPEG_CAMERAS, PRINTER_MJPEG_CAMERAS,
+    ElegooPrinterSensorEntityDescription)
+from custom_components.elegoo_printer.elegoo_sdcp.client import \
+    ElegooPrinterClient
+from custom_components.elegoo_printer.elegoo_sdcp.models.enums import \
+    ElegooVideoStatus
 from custom_components.elegoo_printer.entity import ElegooPrinterEntity
 
 
@@ -126,7 +123,6 @@ class ElegooGo2RTCCamera(ElegooPrinterEntity, Camera):
         )
         self._attr_name = "Camera"
         self._attr_supported_features = CameraEntityFeature.STREAM
-
         self._printer_client: ElegooPrinterClient = (
             coordinator.config_entry.runtime_data.client._elegoo_printer
         )
@@ -147,31 +143,19 @@ class ElegooGo2RTCCamera(ElegooPrinterEntity, Camera):
 
     async def stream_source(self) -> str | None:
         """
-        Return the source of the stream for go2rtc, formatted correctly to avoid URL encoding issues.
+        Return the source of the stream for go2rtc, formatted correctly.
         """
         LOGGER.info("go2rtc stream_source called. Requesting video from printer...")
         video = await self._printer_client.get_printer_video(toggle=True)
 
         if video and video.status and video.status == ElegooVideoStatus.SUCCESS:
-            # Get the base URL from the printer
-            base_url = video.video_url
-
-            # Ensure there's no trailing '?' that might confuse the URL parser
-            if base_url.endswith("?"):
-                base_url = base_url[:-1]
-
-            # Construct the final source string with the ffmpeg: prefix and # fragments
-            source_url = (
-                f"ffmpeg:{base_url}"
-                f"#input=rtsp/udp#video=h264#media=video#resolution=960x540"
-            )
-            LOGGER.info(
-                f"SUCCESS: Providing clean, formatted source to go2rtc: {source_url}"
-            )
-            return "elegoo_camera"
+            # Build the special go2rtc ffmpeg source string
+            source_url = f"ffmpeg:{video.video_url}?#input=rtsp/udp#video=h264#media=video#resolution=960x540"
+            LOGGER.info(f"SUCCESS: Providing formatted source to go2rtc: {source_url}")
+            return source_url
 
         LOGGER.warning("FAILURE: No stream source available for go2rtc.")
-        return "elegoo_camera"
+        return None
 
     @property
     def available(self) -> bool:
