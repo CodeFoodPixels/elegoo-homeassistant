@@ -1,0 +1,2 @@
+streams:
+  elegoo_camera: "ffmpeg:rtsp://10.0.0.212:554/video?#input=rtsp/udp#video=h264#media=video#resolution=960x540"
