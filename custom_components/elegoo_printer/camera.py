@@ -1,5 +1,10 @@
-from homeassistant.components.ffmpeg.camera import FFmpegCamera
+from homeassistant.components.ffmpeg.camera import (
+    CONF_EXTRA_ARGUMENTS,
+    CONF_INPUT,
+    FFmpegCamera,
+)
 from homeassistant.components.mjpeg.camera import MjpegCamera
+from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -118,13 +123,19 @@ class ElegooFFmpegCamera(ElegooPrinterEntity, FFmpegCamera):
 
         Assigns a unique ID based on the entity description and stores references to the printer client and MJPEG stream URL for later use.
         """
-        super().__init__(coordinator)
+        # First, call the initializer for the ElegooPrinterEntityElegooPrinterEntity
+        ElegooPrinterEntity.__init__(self, coordinator)
+
+        # Second, explicitly call the initializer for the FFmpegCamera.
+        # This is the crucial step that creates the _webrtc_provider attribute.
+        FFmpegCamera.__init__(
+            self, hass, {CONF_NAME: "Camera", CONF_INPUT: "", CONF_EXTRA_ARGUMENTS: ""}
+        )
+
         self.entity_description = description
         self._attr_unique_id = coordinator.generate_unique_id(
             self.entity_description.key
         )
-        self._name = "Camera"
-        self._input = ""
         self._printer_client: ElegooPrinterClient = (
             coordinator.config_entry.runtime_data.client._elegoo_printer
         )

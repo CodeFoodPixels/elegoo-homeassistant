@@ -1,10 +1,8 @@
 {
   "name": "danielcherubini/elegoo_printer",
   "image": "mcr.microsoft.com/devcontainers/python:3.13",
-  "postCreateCommand": "make setup",
-  "forwardPorts": [
-    8123
-  ],
+  "postCreateCommand": "make setup && sudo sh -c 'curl -L https://github.com/AlexxIT/go2rtc/releases/latest/download/go2rtc_linux_amd64 -o /usr/local/bin/go2rtc && chmod +x /usr/local/bin/go2rtc'",
+  "forwardPorts": [8123, 1984],
   "remoteEnv": {
     "DEBUG": "false",
     "VENV": ".dev",
@@ -14,6 +12,10 @@
     "8123": {
       "label": "Home Assistant",
       "onAutoForward": "notify"
+    },
+    "1984": {
+      "label": "go2rtc",
+      "onAutoForward": "openBrowser"
     }
   },
   "customizations": {
@@ -44,11 +46,8 @@
   "remoteUser": "vscode",
   "features": {
     "ghcr.io/devcontainers-extra/features/apt-packages:1": {
-      "packages": [
-        "ffmpeg",
-        "libturbojpeg0",
-        "libpcap-dev"
-      ]
+      "packages": ["ffmpeg", "libturbojpeg0", "libpcap-dev"]
     }
   }
 }
+
