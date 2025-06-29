@@ -1,3 +1,4 @@
+from homeassistant.components.camera import CameraEntityFeature
 from homeassistant.components.ffmpeg.camera import (
     CONF_EXTRA_ARGUMENTS,
     CONF_INPUT,
@@ -12,6 +13,7 @@ from custom_components.elegoo_printer import ElegooDataUpdateCoordinator
 from custom_components.elegoo_printer.const import (
     CONF_CENTAURI_CARBON,
     CONF_PROXY_ENABLED,
+    LOGGER,
 )
 from custom_components.elegoo_printer.data import ElegooPrinterConfigEntry
 from custom_components.elegoo_printer.definitions import (
@@ -110,7 +112,7 @@ class ElegooMjpegCamera(ElegooPrinterEntity, MjpegCamera):
 
 
 class ElegooFFmpegCamera(ElegooPrinterEntity, FFmpegCamera):
-    """Representation of an MjpegCamera"""
+    """Representation of an FFmpeg Camera"""
 
     def __init__(
         self,
@@ -119,48 +121,53 @@ class ElegooFFmpegCamera(ElegooPrinterEntity, FFmpegCamera):
         description: ElegooPrinterSensorEntityDescription,
     ) -> None:
         """
-        Initialize the Elegoo MJPEG camera entity with its description and printer client.
-
-        Assigns a unique ID based on the entity description and stores references to the printer client and MJPEG stream URL for later use.
+        Initialize the Elegoo FFmpeg camera entity.
         """
-        # First, call the initializer for the ElegooPrinterEntityElegooPrinterEntity
         ElegooPrinterEntity.__init__(self, coordinator)
-
-        # Second, explicitly call the initializer for the FFmpegCamera.
-        # This is the crucial step that creates the _webrtc_provider attribute.
         FFmpegCamera.__init__(
-            self, hass, {CONF_NAME: "Camera", CONF_INPUT: "", CONF_EXTRA_ARGUMENTS: ""}
+            self,
+            hass,
+            # We provide a dummy input here; the real one comes from stream_source.
+            {
+                CONF_NAME: "Camera",
+                CONF_INPUT: "dummy",
+                CONF_EXTRA_ARGUMENTS: "-an -rtsp_transport tcp -hide_banner -v error -allowed_media_types video -fflags nobuffer -flags low_delay -timeout 5000000",
+            },
         )
 
         self.entity_description = description
         self._attr_unique_id = coordinator.generate_unique_id(
             self.entity_description.key
         )
+        self._attr_supported_features = CameraEntityFeature.STREAM
         self._printer_client: ElegooPrinterClient = (
             coordinator.config_entry.runtime_data.client._elegoo_printer
         )
 
-    async def stream_source(self) -> str:
+    async def stream_source(self) -> str | None:
         """
-        Asynchronously retrieves the current MJPEG stream URL for the printer camera.
-
-        If the printer video stream is successfully enabled, returns either a local proxy URL or the direct printer video URL based on configuration. Otherwise, returns the last known MJPEG URL.
-
-        Returns:
-            str: The MJPEG stream URL for the camera.
+        Return the source of the stream. Return None if not available.
         """
+        LOGGER.info("stream_source called. Requesting video from printer...")
         video = await self._printer_client.get_printer_video(toggle=True)
-        if video.status and video.status == ElegooVideoStatus.SUCCESS:
-            self._input = video.video_url
 
-        return self._input
+        if video:
+            LOGGER.info(
+                f"Printer response received. Status: {video.status}, URL: '{video.video_url}'"
+            )
+            if video.status and video.status == ElegooVideoStatus.SUCCESS:
+                LOGGER.info(f"SUCCESS: Returning stream URL: {video.video_url}")
+                return video.video_url
+        else:
+            LOGGER.error("Did not receive a response object from get_printer_video.")
+
+        LOGGER.warning("FAILURE: Stream source is returning None.")
+        return None
 
     @property
     def available(self) -> bool:
         """
         Return whether the camera entity is currently available.
-
-        If the entity description specifies an availability function, this function is used to determine availability based on the printer's video data. Otherwise, falls back to the default availability check.
         """
         if (
             hasattr(self, "entity_description")
