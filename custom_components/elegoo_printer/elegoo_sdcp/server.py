@@ -524,12 +524,12 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
                 "Id": getattr(self.printer, "connection", os.urandom(8).hex()),
                 "Data": {
                     "Name": f"{getattr(self.printer, 'name', 'Elegoo')} Proxy",
-                    "MachineName": getattr(self.printer, "name", "Elegoo Proxy"),
-                    "BrandName": "Elegoo",
+                    "MachineName": self.printer.model,
+                    "BrandName": self.printer.brand,
                     "MainboardIP": self.proxy_ip,
-                    "MainboardID": getattr(self.printer, "id", "unknown"),
-                    "ProtocolVersion": "V3.0.0",
-                    "FirmwareVersion": getattr(self.printer, "version", "V1.0.0"),
+                    "MainboardID": self.printer.id, 
+                    "ProtocolVersion": self.printer.protocol,
+                    "FirmwareVersion": self.printer.firmware,
                 },
             }
             json_string = json.dumps(response_payload)

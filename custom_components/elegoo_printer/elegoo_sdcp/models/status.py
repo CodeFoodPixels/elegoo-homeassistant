@@ -1,8 +1,8 @@
 """Models for the Elegoo printer."""
 
 import json
-from typing import Any, List
 
+from typing import Any, List
 from .enums import ElegooMachineStatus, ElegooPrintError, ElegooPrintStatus
 
 

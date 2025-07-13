@@ -6,6 +6,7 @@ import logging
 import os
 import socket
 import time
+
 from types import MappingProxyType
 from typing import Any
 
@@ -65,7 +66,9 @@ class ElegooPrinterClient:
         self.ip_address: str = ip_address
         self.printer_websocket: ClientWebSocketResponse | None = None
         self.config = config
-        self.printer: Printer = Printer.from_dict(dict(config))
+        self.printer: Printer = Printer.from_dict(
+            dict(config)
+        )
         self.printer_data = PrinterData()
         self.logger = logger
         self._is_connected: bool = False
