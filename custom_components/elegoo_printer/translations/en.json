@@ -6,7 +6,8 @@
         "data": {
           "ip_address": "Printer IP Address",
           "centauri_carbon": "Is this an FDM Printer",
-          "proxy_enabled": "Enable the proxy server (restart after changing this)"
+          "proxy_enabled": "Enable the proxy server (restart after changing this)",
+          "show_webui_in_sidebar": "Show printer web UI in the sidebar"
         }
       }
     }
@@ -25,14 +26,16 @@
         "description": "If you need help with the configuration have a look here: https://github.com/danielcherubini/elegoo-homeassistant",
         "data": {
           "ip_address": "Printer IP Address",
-          "proxy_enabled": "Enable the proxy server"
+          "proxy_enabled": "Enable the proxy server",
+          "show_webui_in_sidebar": "Show printer web UI in the sidebar"
         }
       },
       "fdm_options": {
         "title": "FDM Printer Options",
         "description": "Configure additional options for your selected printer. [Read more about the proxy server](https://github.com/danielcherubini/elegoo-homeassistant/discussions/185).",
         "data": {
-          "proxy_enabled": "Enable the proxy server"
+          "proxy_enabled": "Enable the proxy server",
+          "show_webui_in_sidebar": "Show printer web UI in the sidebar"
         }
       },
       "resin_options": {

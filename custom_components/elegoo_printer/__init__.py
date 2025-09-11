@@ -32,9 +32,11 @@ from .const import (
     CONFIG_VERSION_3,
     DOMAIN,
     LOGGER,
+    WEBSOCKET_PORT,
 )
 from .coordinator import ElegooDataUpdateCoordinator
 from .data import ElegooPrinterData
+from .frontend import async_register_frontend, async_unregister_frontend
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -88,6 +90,12 @@ async def async_setup_entry(
         msg = "Failed to connect to the printer"
         raise ConfigEntryNotReady(msg)
 
+    if client.printer.show_webui_in_sidebar:
+        url = f"http://{client.printer.ip_address}"
+        if client.printer.proxy_enabled:
+            url += f":{WEBSOCKET_PORT}"
+        await async_register_frontend(hass, url)
+
     entry.runtime_data = ElegooPrinterData(
         api=client,
         integration=async_get_loaded_integration(hass, entry.domain),
@@ -111,8 +119,11 @@ async def async_unload_entry(
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok and (client := entry.runtime_data.api):
         await client.elegoo_disconnect()
-        if client.printer and client.printer.proxy_enabled:
-            await client.elegoo_stop_proxy()
+        if client.printer:
+            if client.printer.proxy_enabled:
+                await client.elegoo_stop_proxy()
+            if client.printer.show_webui_in_sidebar:
+                await async_unregister_frontend(hass)
 
     return unload_ok
 

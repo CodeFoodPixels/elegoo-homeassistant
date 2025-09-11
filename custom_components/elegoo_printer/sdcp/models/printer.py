@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from custom_components.elegoo_printer.const import (
     CONF_CAMERA_ENABLED,
     CONF_PROXY_ENABLED,
+    CONF_SHOW_WEBUI_IN_SIDEBAR,
 )
 from custom_components.elegoo_printer.sdcp.models.enums import ElegooMachineStatus
 
@@ -69,6 +70,7 @@ class Printer:
     printer_type: PrinterType | None
     proxy_enabled: bool
     camera_enabled: bool
+    show_webui_in_sidebar: bool
 
     def __init__(
         self,
@@ -117,6 +119,7 @@ class Printer:
         # Initialize config-based attributes for all instances
         self.proxy_enabled = config.get(CONF_PROXY_ENABLED, False)
         self.camera_enabled = config.get(CONF_CAMERA_ENABLED, False)
+        self.show_webui_in_sidebar = config.get(CONF_SHOW_WEBUI_IN_SIDEBAR, False)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a dictionary containing all attributes of the Printer instance."""
@@ -132,6 +135,7 @@ class Printer:
             "printer_type": self.printer_type.value if self.printer_type else None,
             "proxy_enabled": self.proxy_enabled,
             "camera_enabled": self.camera_enabled,
+            "show_webui_in_sidebar": self.show_webui_in_sidebar,
         }
 
     @classmethod
@@ -158,6 +162,10 @@ class Printer:
         )
         printer.camera_enabled = data_dict.get(
             CONF_CAMERA_ENABLED, data_dict.get("camera_enabled", False)
+        )
+        printer.show_webui_in_sidebar = data_dict.get(
+            CONF_SHOW_WEBUI_IN_SIDEBAR,
+            data_dict.get("show_webui_in_sidebar", False),
         )
         return printer
 

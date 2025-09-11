@@ -19,6 +19,7 @@ CONF_MODEL = "model"
 CONF_NAME = "name"
 CONF_PRINTER_TYPE = "printer_type"
 CONF_PROXY_ENABLED = "proxy_enabled"
+CONF_SHOW_WEBUI_IN_SIDEBAR = "show_webui_in_sidebar"
 
 # Websocket and proxy settings
 DEFAULT_BROADCAST_ADDRESS = "255.255.255.255"

@@ -13,7 +13,13 @@ from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_CAMERA_ENABLED, CONF_PROXY_ENABLED, DOMAIN, LOGGER
+from .const import (
+    CONF_CAMERA_ENABLED,
+    CONF_PROXY_ENABLED,
+    CONF_SHOW_WEBUI_IN_SIDEBAR,
+    DOMAIN,
+    LOGGER,
+)
 from .sdcp.exceptions import (
     ElegooConfigFlowConnectionError,
     ElegooConfigFlowGeneralError,
@@ -36,6 +42,11 @@ OPTIONS_SCHEMA = vol.Schema(
         ),
         vol.Required(
             CONF_PROXY_ENABLED,
+        ): selector.BooleanSelector(
+            selector.BooleanSelectorConfig(),
+        ),
+        vol.Required(
+            CONF_SHOW_WEBUI_IN_SIDEBAR,
         ): selector.BooleanSelector(
             selector.BooleanSelectorConfig(),
         ),
@@ -262,6 +273,12 @@ class ElegooFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                             ): selector.BooleanSelector(
                                 selector.BooleanSelectorConfig(),
                             ),
+                            vol.Required(
+                                CONF_SHOW_WEBUI_IN_SIDEBAR,
+                                default=self.selected_printer.show_webui_in_sidebar,
+                            ): selector.BooleanSelector(
+                                selector.BooleanSelectorConfig(),
+                            ),
                         }
                     ),
                     errors=_errors,
@@ -390,6 +407,9 @@ class ElegooFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None and self.selected_printer:
             printer_to_validate = Printer.from_dict(self.selected_printer.to_dict())
             printer_to_validate.proxy_enabled = user_input[CONF_PROXY_ENABLED]
+            printer_to_validate.show_webui_in_sidebar = user_input[
+                CONF_SHOW_WEBUI_IN_SIDEBAR
+            ]
             try:
                 # Pass the full user_input to _async_test_connection for centauri_carbon and proxy_enabled  # noqa: E501
                 validated_printer = await _async_test_connection(
@@ -421,6 +441,12 @@ class ElegooFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_PROXY_ENABLED,
                         default=self.selected_printer.proxy_enabled,
+                    ): selector.BooleanSelector(
+                        selector.BooleanSelectorConfig(),
+                    ),
+                    vol.Required(
+                        CONF_SHOW_WEBUI_IN_SIDEBAR,
+                        default=self.selected_printer.show_webui_in_sidebar,
                     ): selector.BooleanSelector(
                         selector.BooleanSelectorConfig(),
                     ),
@@ -503,6 +529,9 @@ class ElegooOptionsFlowHandler(config_entries.OptionsFlow):
                     self.hass, printer, user_input
                 )
                 tested_printer.proxy_enabled = user_input[CONF_PROXY_ENABLED]
+                tested_printer.show_webui_in_sidebar = user_input[
+                    CONF_SHOW_WEBUI_IN_SIDEBAR
+                ]
                 LOGGER.debug("Tested printer: %s", tested_printer.to_dict())
                 return self.async_create_entry(
                     title=tested_printer.name,
@@ -531,6 +560,11 @@ class ElegooOptionsFlowHandler(config_entries.OptionsFlow):
             ),
             vol.Required(
                 CONF_PROXY_ENABLED,
+            ): selector.BooleanSelector(
+                selector.BooleanSelectorConfig(),
+            ),
+            vol.Required(
+                CONF_SHOW_WEBUI_IN_SIDEBAR,
             ): selector.BooleanSelector(
                 selector.BooleanSelectorConfig(),
             ),
